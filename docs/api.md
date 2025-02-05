@@ -523,6 +523,63 @@ order: string (optional) - Sort order (asc, desc)
 - Results are cached for performance
 - Search is case-insensitive
 
+### Update User Role
+
+```http
+PUT /api/admin/users/role
+```
+
+Update a user's role. Only ADMIN and SUPER_ADMIN users can access this endpoint.
+
+**Request Body:**
+
+```json
+{
+  "user_id": "integer",
+  "role": "string",
+  "reason": "string" // Required for ADMIN users, minimum 15 characters
+}
+```
+
+**Validation Rules:**
+
+- `user_id`: Required
+- `role`: Required, must be one of: "USER", "EDITOR", "ADMIN", "SUPER_ADMIN"
+- `reason`: Required for ADMIN users when changing roles, minimum 15 characters
+
+**Response:**
+
+```json
+{
+  "message": "string",
+  "user": {
+    "id": "integer",
+    "username": "string",
+    "role": "string",
+    "updated_at": "timestamp"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: Role updated successfully
+- `400`: Invalid request body
+- `401`: Unauthorized - Authentication required
+- `403`: Forbidden - Insufficient permissions
+- `404`: User not found
+- `500`: Server error
+
+**Authorization Rules:**
+
+- Only ADMIN and SUPER_ADMIN users can access this endpoint
+- First SUPER_ADMIN's role cannot be changed
+- Only first SUPER_ADMIN can grant SUPER_ADMIN role to others
+- SUPER_ADMIN can assign any role (USER, EDITOR, ADMIN, SUPER_ADMIN)
+- ADMIN can only modify between USER and EDITOR roles
+- ADMIN cannot modify SUPER_ADMIN or other ADMIN roles
+- ADMIN must provide a reason (minimum 15 characters) when changing roles
+
 ## Error Responses
 
 All error responses follow this format:

@@ -60,8 +60,8 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		log.Printf("User authenticated - ID: %d, Role: %s", user.ID, user.Role)
 
-		// Set user in context
-		c.Set("user", user)
+		// Set user in context as pointer
+		c.Set("user", &user)
 		c.Set("userID", user.ID)
 		c.Set("userRole", user.Role)
 
