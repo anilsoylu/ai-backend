@@ -18,4 +18,10 @@ func SetupAdminRoutes(router *gin.Engine, db *gorm.DB) {
 	adminGroup.PUT("/users/role", admin.UpdateUserRole(db))
 	adminGroup.GET("/users/:user_id/role-history", admin.GetUserRoleHistory(db))
 	adminGroup.GET("/role-histories", admin.GetAllRoleHistories(db))
+
+	// Ban management
+	adminGroup.POST("/users/ban", admin.BanUser(db))
+	adminGroup.GET("/users/:user_id/ban-history", admin.GetUserBanHistory(db))
+	adminGroup.GET("/ban-histories", admin.GetAllBanHistories(db))
+	adminGroup.POST("/users/:user_id/unban", admin.UnbanUser(db))
 } 

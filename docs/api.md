@@ -674,6 +674,224 @@ Get all role change histories with pagination.
 - `403`: Forbidden - Insufficient permissions
 - `500`: Server error
 
+### Ban User
+
+```http
+POST /api/admin/users/ban
+```
+
+Ban a user from the system. Only ADMIN and SUPER_ADMIN users can ban users.
+
+**Request Body:**
+
+```json
+{
+  "user_id": "integer",
+  "reason": "string", // Required, minimum 15 characters
+  "duration": "string" // Required, number of days (e.g., "7") or "permanent"
+}
+```
+
+**Validation Rules:**
+
+- `user_id`: Required
+- `reason`: Required, minimum 15 characters
+- `duration`: Required, must be either a number of days (e.g., "7") or "permanent"
+
+**Response:**
+
+```json
+{
+  "message": "string",
+  "ban_details": {
+    "user_id": "integer",
+    "username": "string",
+    "banned_by": "string",
+    "reason": "string",
+    "duration": "string", // e.g., "7 days" or "permanent"
+    "duration_days": "integer", // null for permanent bans
+    "start_date": "timestamp",
+    "end_date": "timestamp", // null for permanent bans
+    "created_at": "timestamp"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: User banned successfully
+- `400`: Invalid request body or duration format
+- `401`: Unauthorized - Authentication required
+- `403`: Forbidden - Insufficient permissions
+- `404`: User not found
+- `500`: Server error
+
+**Authorization Rules:**
+
+- Only ADMIN and SUPER_ADMIN users can ban users
+- First SUPER_ADMIN cannot be banned
+- ADMIN cannot ban SUPER_ADMIN users
+- First SUPER_ADMIN can ban other SUPER_ADMIN users
+- Ban reason must be at least 15 characters long
+- Ban duration must be a positive number of days or "permanent"
+
+### Get User Ban History
+
+```http
+GET /api/admin/users/:user_id/ban-history
+```
+
+Get the ban history for a specific user.
+
+**Parameters:**
+
+- `user_id`: User ID (path parameter)
+
+**Response:**
+
+```json
+{
+  "user": {
+    "id": "integer",
+    "username": "string",
+    "status": "string"
+  },
+  "histories": [
+    {
+      "id": "integer",
+      "user_id": "integer",
+      "username": "string",
+      "banned_by_id": "integer",
+      "banned_by": "string",
+      "reason": "string",
+      "duration": "string", // e.g., "7 days" or "permanent"
+      "duration_days": "integer", // null for permanent bans
+      "start_date": "timestamp",
+      "end_date": "timestamp", // null for permanent bans
+      "is_active": "boolean",
+      "unbanned_at": "timestamp", // null if still banned
+      "unbanned_by": "string", // null if still banned
+      "created_at": "timestamp"
+    }
+  ]
+}
+```
+
+**Status Codes:**
+
+- `200`: History retrieved successfully
+- `400`: Invalid user ID
+- `401`: Unauthorized - Authentication required
+- `403`: Forbidden - Insufficient permissions
+- `404`: User not found
+- `500`: Server error
+
+### Get All Ban Histories
+
+```http
+GET /api/admin/ban-histories
+```
+
+Get all ban histories with pagination.
+
+**Query Parameters:**
+
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10, max: 50)
+- `status`: Filter by ban status (optional, "active" or "inactive")
+- `duration`: Filter by duration type (optional, "permanent" or "temporary")
+
+**Response:**
+
+```json
+{
+  "histories": [
+    {
+      "id": "integer",
+      "user_id": "integer",
+      "username": "string",
+      "banned_by_id": "integer",
+      "banned_by": "string",
+      "reason": "string",
+      "duration": "string", // e.g., "7 days" or "permanent"
+      "duration_days": "integer", // null for permanent bans
+      "start_date": "timestamp",
+      "end_date": "timestamp", // null for permanent bans
+      "is_active": "boolean",
+      "unbanned_at": "timestamp", // null if still banned
+      "unbanned_by": "string", // null if still banned
+      "created_at": "timestamp"
+    }
+  ],
+  "pagination": {
+    "current_page": "integer",
+    "total_pages": "integer",
+    "total_items": "integer",
+    "per_page": "integer",
+    "has_next": "boolean",
+    "has_prev": "boolean"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: Histories retrieved successfully
+- `400`: Invalid query parameters
+- `401`: Unauthorized - Authentication required
+- `403`: Forbidden - Insufficient permissions
+- `500`: Server error
+
+### Unban User
+
+```http
+POST /api/admin/users/:user_id/unban
+```
+
+Unban a user from the system. Only ADMIN and SUPER_ADMIN users can unban users.
+
+**Parameters:**
+
+- `user_id`: User ID (path parameter)
+
+**Request Body:**
+
+```json
+{
+  "reason": "string" // Required, minimum 15 characters
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "string",
+  "unban_details": {
+    "user_id": "integer",
+    "username": "string",
+    "unbanned_by": "string",
+    "reason": "string",
+    "unbanned_at": "timestamp"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: User unbanned successfully
+- `400`: Invalid request body
+- `401`: Unauthorized - Authentication required
+- `403`: Forbidden - Insufficient permissions
+- `404`: User not found or not banned
+- `500`: Server error
+
+**Authorization Rules:**
+
+- Only ADMIN and SUPER_ADMIN users can unban users
+- ADMIN cannot unban users banned by SUPER_ADMIN
+- Unban reason must be at least 15 characters long
+
 ## Error Responses
 
 All error responses follow this format:
