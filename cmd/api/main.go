@@ -4,10 +4,13 @@ import (
 	"log"
 	"os"
 
+	"ai-backend/internal/database"
+	"ai-backend/internal/middleware"
+	"ai-backend/internal/models"
+	"ai-backend/internal/routes"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -15,19 +18,36 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	// Database connection
-	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{})
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
-	}
+
+	// Initialize database
+	database.InitDB()
 
 	// Migrate database schemas
-	if err := db.AutoMigrate(); err != nil {
-		log.Fatal("Failed to migrate database:", err) 
+	if err := database.DB.AutoMigrate(
+		&models.User{},
+		&models.Account{},
+		&models.Session{},
+		&models.VerificationToken{},
+		&models.Question{},
+		&models.Answer{},
+		&models.Vote{},
+	); err != nil {
+		log.Fatal("Failed to migrate database:", err)
+	}
+
+	// Seed default user
+	if err := database.SeedDefaultUser(); err != nil {
+		log.Fatal("Failed to seed default user:", err)
 	}
 
 	// Initialize Gin router
 	r := gin.Default()
+
+	// Add global error handler
+	r.Use(middleware.ErrorHandler())
+
+	// Setup routes
+	routes.SetupAuthRoutes(r)
 
 	// Basic health check endpoint
 	r.GET("/health", func(c *gin.Context) {
