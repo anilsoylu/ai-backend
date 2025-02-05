@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UpdateStatusRequest struct {
@@ -93,5 +94,98 @@ func UpdateUserStatus(c *gin.Context) {
 			"id":     targetUser.ID,
 			"status": targetUser.Status,
 		},
+	})
+}
+
+type UserHandler struct {
+	db *gorm.DB
+}
+
+func NewUserHandler(db *gorm.DB) *UserHandler {
+	return &UserHandler{db: db}
+}
+
+type UpdateProfileRequest struct {
+	Username  *string `json:"username" binding:"omitempty,min=3"`
+	Email     *string `json:"email" binding:"omitempty,email"`
+	FullName  *string `json:"full_name" binding:"omitempty,max=100"`
+	Bio       *string `json:"bio" binding:"omitempty,max=500"`
+	AvatarURL *string `json:"avatar_url" binding:"omitempty,url"`
+}
+
+// UpdateProfile güncelleme işlemini gerçekleştirir
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	// Kullanıcı kimliğini al
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var req UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Mevcut kullanıcıyı bul
+	var user models.User
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Email veya kullanıcı adı değişikliği varsa, benzersizlik kontrolü yap
+	if req.Email != nil && *req.Email != *user.Email {
+		var count int64
+		h.db.Model(&models.User{}).Where("email = ?", req.Email).Count(&count)
+		if count > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+			return
+		}
+	}
+
+	if req.Username != nil && *req.Username != *user.Username {
+		var count int64
+		h.db.Model(&models.User{}).Where("username = ?", req.Username).Count(&count)
+		if count > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+			return
+		}
+	}
+
+	// Güncelleme işlemi
+	updates := map[string]interface{}{}
+	
+	if req.Username != nil {
+		updates["username"] = req.Username
+	}
+	if req.Email != nil {
+		updates["email"] = req.Email
+	}
+	if req.FullName != nil {
+		updates["name"] = req.FullName
+	}
+	if req.Bio != nil {
+		updates["bio"] = req.Bio
+	}
+	if req.AvatarURL != nil {
+		updates["image"] = req.AvatarURL
+	}
+
+	// Güncelleme işlemini gerçekleştir
+	if err := h.db.Model(&user).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+		return
+	}
+
+	// Güncellenmiş kullanıcı bilgilerini getir
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": user,
 	})
 } 

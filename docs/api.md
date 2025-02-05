@@ -282,6 +282,66 @@ Update a user's status. Regular users can update their own status to active, pas
 - ADMIN and SUPER_ADMIN can update any user's status
 - ADMIN cannot modify SUPER_ADMIN users
 
+### Update User Profile
+
+```http
+PUT /api/users/profile
+```
+
+Update authenticated user's profile information. Users can only update their own profile and cannot modify their role.
+
+**Request Body:**
+
+```json
+{
+  "username": "string",
+  "email": "string",
+  "full_name": "string",
+  "bio": "string",
+  "avatar_url": "string"
+}
+```
+
+**Validation Rules:**
+
+- `username`: Optional, minimum 3 characters
+- `email`: Optional, valid email format
+- `full_name`: Optional, maximum 100 characters
+- `bio`: Optional, maximum 500 characters
+- `avatar_url`: Optional, valid URL format
+
+**Response:**
+
+```json
+{
+  "user": {
+    "id": "integer",
+    "username": "string",
+    "email": "string",
+    "full_name": "string",
+    "bio": "string",
+    "avatar_url": "string",
+    "role": "string",
+    "status": "string",
+    "updated_at": "timestamp"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: Profile updated successfully
+- `400`: Invalid request body
+- `401`: Unauthorized - Authentication required
+- `409`: Email or username already exists
+- `500`: Server error
+
+**Notes:**
+
+- Users cannot modify their role through this endpoint
+- Email changes require unique validation
+- Username changes require unique validation
+
 ## Error Responses
 
 All error responses follow this format:

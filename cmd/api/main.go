@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"ai-backend/internal/database"
+	"ai-backend/internal/handlers/user"
 	"ai-backend/internal/middleware"
 	"ai-backend/internal/models"
 	"ai-backend/internal/routes"
@@ -46,9 +47,12 @@ func main() {
 	// Add global error handler
 	r.Use(middleware.ErrorHandler())
 
+	// Initialize handlers
+	userHandler := user.NewUserHandler(database.DB)
+
 	// Setup routes
 	routes.SetupAuthRoutes(r)
-	routes.SetupUserRoutes(r)
+	routes.SetupUserRoutes(r, userHandler)
 
 	// Basic health check endpoint
 	r.GET("/health", func(c *gin.Context) {

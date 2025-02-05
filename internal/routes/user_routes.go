@@ -8,7 +8,7 @@ import (
 )
 
 // SetupUserRoutes configures the user routes
-func SetupUserRoutes(router *gin.Engine) {
+func SetupUserRoutes(router *gin.Engine, userHandler *user.UserHandler) {
 	userGroup := router.Group("/api/users")
 	{
 		// Protected routes that require authentication
@@ -16,5 +16,6 @@ func SetupUserRoutes(router *gin.Engine) {
 		
 		// All authenticated users can access this endpoint
 		userGroup.PUT("/status", user.UpdateUserStatus)
+		userGroup.PUT("/profile", userHandler.UpdateProfile)
 	}
 } 
