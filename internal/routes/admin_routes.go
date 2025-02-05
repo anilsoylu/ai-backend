@@ -14,5 +14,8 @@ func SetupAdminRoutes(router *gin.Engine, db *gorm.DB) {
 	adminGroup.Use(middleware.AuthMiddleware())
 	adminGroup.Use(middleware.AdminRoleMiddleware([]models.UserRole{models.RoleAdmin, models.RoleSuperAdmin}))
 
+	// Role management
 	adminGroup.PUT("/users/role", admin.UpdateUserRole(db))
+	adminGroup.GET("/users/:user_id/role-history", admin.GetUserRoleHistory(db))
+	adminGroup.GET("/role-histories", admin.GetAllRoleHistories(db))
 } 

@@ -580,6 +580,100 @@ Update a user's role. Only ADMIN and SUPER_ADMIN users can access this endpoint.
 - ADMIN cannot modify SUPER_ADMIN or other ADMIN roles
 - ADMIN must provide a reason (minimum 15 characters) when changing roles
 
+### Get User Role History
+
+```http
+GET /api/admin/users/:user_id/role-history
+```
+
+Get the role change history for a specific user.
+
+**Parameters:**
+
+- `user_id`: User ID (path parameter)
+
+**Response:**
+
+```json
+{
+  "user": {
+    "id": "integer",
+    "username": "string",
+    "role": "string"
+  },
+  "histories": [
+    {
+      "id": "integer",
+      "user_id": "integer",
+      "username": "string",
+      "changed_by_id": "integer",
+      "changed_by": "string",
+      "old_role": "string",
+      "new_role": "string",
+      "reason": "string",
+      "created_at": "timestamp"
+    }
+  ]
+}
+```
+
+**Status Codes:**
+
+- `200`: History retrieved successfully
+- `400`: Invalid user ID
+- `401`: Unauthorized - Authentication required
+- `403`: Forbidden - Insufficient permissions
+- `404`: User not found
+- `500`: Server error
+
+### Get All Role Histories
+
+```http
+GET /api/admin/role-histories
+```
+
+Get all role change histories with pagination.
+
+**Query Parameters:**
+
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10, max: 50)
+
+**Response:**
+
+```json
+{
+  "histories": [
+    {
+      "id": "integer",
+      "user_id": "integer",
+      "username": "string",
+      "changed_by_id": "integer",
+      "changed_by": "string",
+      "old_role": "string",
+      "new_role": "string",
+      "reason": "string",
+      "created_at": "timestamp"
+    }
+  ],
+  "pagination": {
+    "current_page": "integer",
+    "total_pages": "integer",
+    "total_items": "integer",
+    "per_page": "integer",
+    "has_next": "boolean",
+    "has_prev": "boolean"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: Histories retrieved successfully
+- `401`: Unauthorized - Authentication required
+- `403`: Forbidden - Insufficient permissions
+- `500`: Server error
+
 ## Error Responses
 
 All error responses follow this format:
