@@ -15,6 +15,7 @@ func SetupUserRoutes(router *gin.Engine, userHandler *user.UserHandler) {
 		userGroup.Use(middleware.AuthMiddleware())
 		
 		// All authenticated users can access these endpoints
+		userGroup.GET("", userHandler.ListUsers)
 		userGroup.PUT("/status", user.UpdateUserStatus)
 		userGroup.PUT("/profile", userHandler.UpdateProfile)
 		userGroup.DELETE("/account", userHandler.DeleteAccount)

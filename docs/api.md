@@ -462,6 +462,67 @@ Get the freeze history of the authenticated user's account.
 - `401`: Unauthorized
 - `500`: Server error
 
+### List Users
+
+```http
+GET /api/users
+```
+
+Get a paginated list of users.
+
+**Query Parameters:**
+
+```
+page: integer (default: 1) - Page number
+limit: integer (default: 10, max: 50) - Number of users per page
+search: string (optional) - Search by username or email
+role: string (optional) - Filter by user role
+status: string (optional) - Filter by user status
+sort: string (optional) - Sort field (created_at, username, email)
+order: string (optional) - Sort order (asc, desc)
+```
+
+**Response:**
+
+```json
+{
+  "users": [
+    {
+      "id": "integer",
+      "username": "string",
+      "email": "string",
+      "full_name": "string",
+      "bio": "string",
+      "avatar_url": "string",
+      "role": "string",
+      "status": "string",
+      "created_at": "timestamp"
+    }
+  ],
+  "pagination": {
+    "current_page": "integer",
+    "total_pages": "integer",
+    "total_items": "integer",
+    "has_next": "boolean",
+    "has_prev": "boolean"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: Users retrieved successfully
+- `400`: Invalid query parameters
+- `401`: Unauthorized
+- `500`: Server error
+
+**Notes:**
+
+- Response is paginated
+- Soft deleted users are excluded
+- Results are cached for performance
+- Search is case-insensitive
+
 ## Error Responses
 
 All error responses follow this format:
