@@ -24,8 +24,8 @@ const (
 type User struct {
 	gorm.Model
 	Name          *string    `gorm:"type:varchar(255)"`
-	Username      *string    `gorm:"type:varchar(255);uniqueIndex"`
-	Email         *string    `gorm:"type:varchar(255);uniqueIndex"`
+	Username      *string    `gorm:"type:varchar(255);index:idx_users_username,unique,where:deleted_at IS NULL"`
+	Email         *string    `gorm:"type:varchar(255);index:idx_users_email,unique,where:deleted_at IS NULL"`
 	EmailVerified *time.Time `gorm:"column:emailVerified"`
 	Password      *string    `gorm:"type:text"`
 	Image         *string    `gorm:"type:text"`

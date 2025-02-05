@@ -5,6 +5,9 @@ import (
 	"ai-backend/internal/models"
 	"net/http"
 
+	"ai-backend/pkg/utils"
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -138,7 +141,9 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	// Email veya kullanıcı adı değişikliği varsa, benzersizlik kontrolü yap
 	if req.Email != nil && *req.Email != *user.Email {
 		var count int64
-		h.db.Model(&models.User{}).Where("email = ?", req.Email).Count(&count)
+		h.db.Model(&models.User{}).
+			Where("email = ? AND deleted_at IS NULL", req.Email).
+			Count(&count)
 		if count > 0 {
 			c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
 			return
@@ -147,7 +152,9 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	if req.Username != nil && *req.Username != *user.Username {
 		var count int64
-		h.db.Model(&models.User{}).Where("username = ?", req.Username).Count(&count)
+		h.db.Model(&models.User{}).
+			Where("username = ? AND deleted_at IS NULL", req.Username).
+			Count(&count)
 		if count > 0 {
 			c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
 			return
@@ -187,5 +194,53 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": user,
+	})
+}
+
+type DeleteAccountRequest struct {
+	Password string `json:"password" binding:"required"`
+}
+
+// DeleteAccount kullanıcı hesabını soft delete yapar
+func (h *UserHandler) DeleteAccount(c *gin.Context) {
+	// Kullanıcı kimliğini al
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var req DeleteAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Mevcut kullanıcıyı bul
+	var user models.User
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Şifre kontrolü yap
+	if !utils.CheckPasswordHash(req.Password, *user.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
+		return
+	}
+
+	// Kullanıcıyı soft delete yap
+	if err := h.db.Delete(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete account"})
+		return
+	}
+
+	// Kullanıcının tüm oturumlarını sonlandır
+	if err := h.db.Where("user_id = ?", userID).Delete(&models.Session{}).Error; err != nil {
+		log.Printf("Failed to delete user sessions: %v", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Account deleted successfully",
 	})
 } 

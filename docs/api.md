@@ -342,6 +342,48 @@ Update authenticated user's profile information. Users can only update their own
 - Email changes require unique validation
 - Username changes require unique validation
 
+### Delete Account
+
+```http
+DELETE /api/users/account
+```
+
+Soft delete the authenticated user's account. This action is reversible by an administrator.
+
+**Request Body:**
+
+```json
+{
+  "password": "string"
+}
+```
+
+**Validation Rules:**
+
+- `password`: Required, user's current password for confirmation
+
+**Response:**
+
+```json
+{
+  "message": "Account deleted successfully"
+}
+```
+
+**Status Codes:**
+
+- `200`: Account deleted successfully
+- `400`: Invalid request body
+- `401`: Unauthorized or invalid password
+- `500`: Server error
+
+**Notes:**
+
+- This is a soft delete operation
+- Account can be restored by an administrator
+- All associated data will be preserved but hidden
+- User sessions will be invalidated
+
 ## Error Responses
 
 All error responses follow this format:

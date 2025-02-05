@@ -113,15 +113,19 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Check if email already exists
+	// Check if email already exists (excluding soft deleted users)
 	var existingUser models.User
-	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+	if err := database.DB.
+		Where("email = ? AND deleted_at IS NULL", req.Email).
+		First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
 		return
 	}
 
-	// Check if username already exists
-	if err := database.DB.Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
+	// Check if username already exists (excluding soft deleted users)
+	if err := database.DB.
+		Where("username = ? AND deleted_at IS NULL", req.Username).
+		First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
 		return
 	}

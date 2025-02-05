@@ -14,8 +14,9 @@ func SetupUserRoutes(router *gin.Engine, userHandler *user.UserHandler) {
 		// Protected routes that require authentication
 		userGroup.Use(middleware.AuthMiddleware())
 		
-		// All authenticated users can access this endpoint
+		// All authenticated users can access these endpoints
 		userGroup.PUT("/status", user.UpdateUserStatus)
 		userGroup.PUT("/profile", userHandler.UpdateProfile)
+		userGroup.DELETE("/account", userHandler.DeleteAccount)
 	}
 } 
