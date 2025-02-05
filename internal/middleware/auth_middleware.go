@@ -4,6 +4,7 @@ import (
 	"ai-backend/internal/database"
 	"ai-backend/internal/models"
 	"ai-backend/pkg/utils"
+	"log"
 	"net/http"
 	"strings"
 
@@ -57,6 +58,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		log.Printf("User authenticated - ID: %d, Role: %s", user.ID, user.Role)
+
 		// Set user in context
 		c.Set("user", user)
 		c.Set("userID", user.ID)
@@ -71,19 +74,24 @@ func RoleMiddleware(roles ...models.UserRole) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("userRole")
 		if !exists {
+			log.Printf("User role not found in context")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User role not found"})
 			c.Abort()
 			return
 		}
 
 		role := userRole.(models.UserRole)
+		log.Printf("Checking role access - User Role: %s, Required Roles: %v", role, roles)
+
 		for _, allowedRole := range roles {
 			if role == allowedRole {
+				log.Printf("Role access granted for role: %s", role)
 				c.Next()
 				return
 			}
 		}
 
+		log.Printf("Access denied - User Role: %s does not match required roles: %v", role, roles)
 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 		c.Abort()
 	}

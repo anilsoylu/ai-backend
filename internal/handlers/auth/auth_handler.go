@@ -87,6 +87,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	if user.Status == models.StatusPassive {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Account is passive. Please contact support to reactivate your account."})
+		return
+	}
+
 	// Generate JWT token
 	token, err := utils.GenerateToken(user)
 	if err != nil {
