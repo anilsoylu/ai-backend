@@ -1,0 +1,33 @@
+# Environment variables
+.env
+
+# IDE specific files
+.cursorrules
+.idea
+.vscode
+*.swp
+*.swo
+
+# Binaries
+bin/
+tmp/
+
+# Air
+tmp/
+*.log
+
+# Dependencies
+vendor/
+
+# Uploads
+uploads/*
+!uploads/default/
+!uploads/default/avatar.png
+
+# Test files
+*.test
+*.out
+
+# OS specific
+.DS_Store
+Thumbs.db %
