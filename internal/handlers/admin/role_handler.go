@@ -102,15 +102,49 @@ func UpdateUserRole(db *gorm.DB) gin.HandlerFunc {
 			}
 		}
 
-		// Update role
+		// Start transaction
+		tx := db.Begin()
+		if tx.Error != nil {
+			log.Printf("Failed to start transaction: %v", tx.Error)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+
+		// Create role history record
+		roleHistory := models.RoleHistory{
+			UserID:      targetUser.ID,
+			ChangedByID: cu.ID,
+			OldRole:     targetUser.Role,
+			NewRole:     req.Role,
+			Reason:      req.Reason,
+		}
+
+		if err := tx.Create(&roleHistory).Error; err != nil {
+			tx.Rollback()
+			log.Printf("Failed to create role history: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create role history"})
+			return
+		}
+
+		// Update user role
+		oldRole := targetUser.Role
 		targetUser.Role = req.Role
-		if err := db.Save(&targetUser).Error; err != nil {
+		if err := tx.Save(&targetUser).Error; err != nil {
+			tx.Rollback()
 			log.Printf("Failed to update user role: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update role"})
 			return
 		}
 
-		log.Printf("Role updated successfully. User ID: %d, New Role: %s", targetUser.ID, targetUser.Role)
+		// Commit transaction
+		if err := tx.Commit().Error; err != nil {
+			tx.Rollback()
+			log.Printf("Failed to commit transaction: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+
+		log.Printf("Role updated successfully. User ID: %d, Old Role: %s, New Role: %s", targetUser.ID, oldRole, targetUser.Role)
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Role updated successfully",
 			"user": gin.H{
@@ -118,6 +152,13 @@ func UpdateUserRole(db *gorm.DB) gin.HandlerFunc {
 				"username":   targetUser.Username,
 				"role":       targetUser.Role,
 				"updated_at": targetUser.UpdatedAt,
+			},
+			"role_history": gin.H{
+				"old_role":      oldRole,
+				"new_role":      targetUser.Role,
+				"reason":        req.Reason,
+				"changed_by_id": cu.ID,
+				"changed_at":    roleHistory.CreatedAt,
 			},
 		})
 	}
