@@ -83,8 +83,38 @@ func Login(c *gin.Context) {
 	}
 
 	if user.Status == models.StatusFrozen {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Account is frozen"})
-		return
+		// Aktif dondurma işlemi var mı kontrol et
+		var activeFreeze models.FreezeHistory
+		err := database.DB.Where("user_id = ? AND is_active = ? AND end_date > ?", user.ID, true, time.Now()).
+			First(&activeFreeze).Error
+		
+		if err == nil {
+			// Aktif dondurma işlemi var
+			remainingTime := time.Until(activeFreeze.EndDate).Hours() / 24
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Account is frozen",
+				"details": gin.H{
+					"reason": activeFreeze.Reason,
+					"end_date": activeFreeze.EndDate,
+					"remaining_days": int(remainingTime),
+				},
+			})
+			return
+		} else {
+			// Dondurma süresi dolmuş, hesabı aktif et
+			if err := database.DB.Model(&user).Update("status", models.StatusActive).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user status"})
+				return
+			}
+			
+			// Dondurma kaydını güncelle
+			if err := database.DB.Model(&activeFreeze).Updates(map[string]interface{}{
+				"is_active": false,
+				"unfrozen_at": time.Now(),
+			}).Error; err != nil {
+				log.Printf("Failed to update freeze history: %v", err)
+			}
+		}
 	}
 
 	if user.Status == models.StatusPassive {

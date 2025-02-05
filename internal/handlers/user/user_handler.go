@@ -8,6 +8,8 @@ import (
 	"ai-backend/pkg/utils"
 	"log"
 
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -242,5 +244,103 @@ func (h *UserHandler) DeleteAccount(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Account deleted successfully",
+	})
+}
+
+type FreezeAccountRequest struct {
+	Duration int    `json:"duration" binding:"required,min=1,max=365"`
+	Reason   string `json:"reason" binding:"required,max=500"`
+}
+
+// FreezeAccount kullanıcı hesabını geçici olarak dondurur
+func (h *UserHandler) FreezeAccount(c *gin.Context) {
+	// Kullanıcı kimliğini al
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var req FreezeAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Mevcut kullanıcıyı bul
+	var user models.User
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Aktif dondurma işlemi var mı kontrol et
+	var activeFreeze models.FreezeHistory
+	err := h.db.Where("user_id = ? AND is_active = ? AND end_date > ?", userID, true, time.Now()).
+		First(&activeFreeze).Error
+	if err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account is already frozen"})
+		return
+	}
+
+	// Yeni dondurma işlemi oluştur
+	startDate := time.Now()
+	endDate := startDate.AddDate(0, 0, req.Duration)
+
+	freezeHistory := models.FreezeHistory{
+		UserID:    uint(userID.(uint)),
+		Reason:    req.Reason,
+		Duration:  req.Duration,
+		StartDate: startDate,
+		EndDate:   endDate,
+		IsActive:  true,
+	}
+
+	// Transaction başlat
+	tx := h.db.Begin()
+
+	// Dondurma kaydını oluştur
+	if err := tx.Create(&freezeHistory).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create freeze record"})
+		return
+	}
+
+	// Kullanıcı durumunu güncelle
+	if err := tx.Model(&user).Update("status", models.StatusFrozen).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user status"})
+		return
+	}
+
+	// Transaction'ı tamamla
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete the freeze process"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Account frozen successfully",
+		"freeze_details": freezeHistory,
+	})
+}
+
+// GetFreezeHistory kullanıcının dondurma geçmişini getirir
+func (h *UserHandler) GetFreezeHistory(c *gin.Context) {
+	// Kullanıcı kimliğini al
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var freezeHistory []models.FreezeHistory
+	if err := h.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&freezeHistory).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch freeze history"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"freeze_history": freezeHistory,
 	})
 } 

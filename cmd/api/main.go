@@ -32,6 +32,7 @@ func main() {
 		&models.Question{},
 		&models.Answer{},
 		&models.Vote{},
+		&models.FreezeHistory{},
 	); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

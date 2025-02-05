@@ -18,5 +18,7 @@ func SetupUserRoutes(router *gin.Engine, userHandler *user.UserHandler) {
 		userGroup.PUT("/status", user.UpdateUserStatus)
 		userGroup.PUT("/profile", userHandler.UpdateProfile)
 		userGroup.DELETE("/account", userHandler.DeleteAccount)
+		userGroup.POST("/freeze", userHandler.FreezeAccount)
+		userGroup.GET("/freeze/history", userHandler.GetFreezeHistory)
 	}
 } 

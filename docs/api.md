@@ -384,6 +384,84 @@ Soft delete the authenticated user's account. This action is reversible by an ad
 - All associated data will be preserved but hidden
 - User sessions will be invalidated
 
+### Freeze Account
+
+```http
+POST /api/users/freeze
+```
+
+Temporarily freeze the authenticated user's account for a specified duration.
+
+**Request Body:**
+
+```json
+{
+  "duration": "integer", // Number of days to freeze the account
+  "reason": "string" // Reason for freezing the account
+}
+```
+
+**Validation Rules:**
+
+- `duration`: Required, minimum 1 day, maximum 365 days
+- `reason`: Required, maximum 500 characters
+
+**Response:**
+
+```json
+{
+  "message": "Account frozen successfully",
+  "freeze_details": {
+    "id": "integer",
+    "user_id": "integer",
+    "reason": "string",
+    "duration": "integer",
+    "start_date": "timestamp",
+    "end_date": "timestamp",
+    "is_active": "boolean"
+  }
+}
+```
+
+**Status Codes:**
+
+- `200`: Account frozen successfully
+- `400`: Invalid request body
+- `401`: Unauthorized
+- `500`: Server error
+
+### Get Freeze History
+
+```http
+GET /api/users/freeze/history
+```
+
+Get the freeze history of the authenticated user's account.
+
+**Response:**
+
+```json
+{
+  "freeze_history": [
+    {
+      "id": "integer",
+      "reason": "string",
+      "duration": "integer",
+      "start_date": "timestamp",
+      "end_date": "timestamp",
+      "is_active": "boolean",
+      "unfrozen_at": "timestamp"
+    }
+  ]
+}
+```
+
+**Status Codes:**
+
+- `200`: History retrieved successfully
+- `401`: Unauthorized
+- `500`: Server error
+
 ## Error Responses
 
 All error responses follow this format:
