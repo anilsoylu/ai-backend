@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDE
+.idea
+.vscode
+
+# Binaries and temp files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+tmp/
+
+# Environment files (except .env)
+.env.*
+!.env
+
+# Dependencies
+vendor/
+
+# Logs
+*.log
+
+# Test coverage
+coverage.out
+coverage.html 
